@@ -1,0 +1,58 @@
+﻿@model ReportViewModel
+
+<h4 class="mb-3">Summary</h4>
+<table class="table table-bordered">
+    <tr>
+        <th>Total Sales</th>
+        <td>$@Model.TotalSales</td>
+    </tr>
+    <tr>
+        <th>Number of Sales</th>
+        <td>@Model.NumberOfSales</td>
+    </tr>
+</table>
+
+<h4 class="mt-5 mb-3">Top 5 Products</h4>
+@if(Model.Products != null && Model.Products.Any())
+{
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Quantity Sold</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var p in Model.Products)
+            {
+                <tr>
+                    <td>@p.ProductName</td>
+                    <td>@p.QuantitySold</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>No products found in this period</p>
+}
+
+<h4 class="mt-5 mb-3">Best Customer</h4>
+@if(Model.Customer != null)
+{
+    <table class="table table-bordered">
+        <tr>
+            <th>Customer</th>
+            <td>@Model.Customer.CustomerName</td>
+        </tr>
+        <tr>
+            <th>Total Purchases</th>
+            <td>$@Model.Customer.TotalPurchases</td>
+        </tr>
+    </table>
+}
+else
+{
+    <p>No customers found in this period</p>
+}

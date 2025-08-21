@@ -1,0 +1,24 @@
+﻿using System.ComponentModel.DataAnnotations;
+using InventoryAndSalesManagement.Features.Sales;
+using Microsoft.EntityFrameworkCore;
+
+namespace InventoryAndSalesManagement.Features.Products
+{
+    public class Product
+    {
+        public int Id { get; set; }
+
+        [MaxLength(100)]
+        public string Name { get; set; }
+
+        [Precision(10, 2)]
+        [Range(0.01, 999999999)]
+        public decimal Price { get; set; }
+
+        [Range(0, int.MaxValue)]
+        [Display(Name = "Quantity In Stock")]
+        public int QuantityInStock { get; set; }
+
+        public List<SalesInvoiceItem> SalesInvoiceItems { get; set; }
+    }
+}

@@ -1,0 +1,63 @@
+﻿@model IEnumerable<Product>
+
+@{
+    ViewData["Title"] = "Products";
+    Layout = "/Features/Shared/_Layout.cshtml";
+}
+
+<h2>Products</h2>
+<a asp-action="Add" class="btn btn-primary mt-2 mb-3">Add</a>
+
+<div class="mb-3">
+    <input type="text" id="searchBox" placeholder="Product name" class="form-control w-25" />
+</div>
+
+<table class="table table-bordered">
+    <thead class="table-dark">
+        <tr>
+            <th>Id</th>
+            <th>Name</th>
+            <th>Price</th>
+            <th>Quantity In Stock</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody id="productsTableBody">
+        @foreach(var product in Model)
+        {
+            <tr>
+                <td>@product.Id</td>
+                <td>@product.Name</td>
+                <td>$@product.Price</td>
+                <td>
+                    @product.QuantityInStock
+                    @if(product.QuantityInStock < 5)
+                    {
+                        <span class="badge bg-danger ms-2">Low</span>
+                    }
+                </td>
+                <td>
+                    <a asp-controller="Product" asp-action="Edit" asp-route-id="@product.Id" class="btn btn-sm btn-warning">Edit</a>
+                    <a asp-controller="Product" asp-action="Delete" asp-route-id="@product.Id" class="btn btn-sm btn-danger">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $("#searchBox").on("keyup", function () {
+                var search = $(this).val();
+                $.ajax({
+                    url: '/Product/Search',
+                    data: { search: search },
+                    success: function (result) {
+                        $("#productsTableBody").html(result);
+                    }
+                });
+            });
+        });
+    </script>
+}

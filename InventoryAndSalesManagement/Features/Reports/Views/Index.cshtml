@@ -1,0 +1,42 @@
+﻿@{
+    ViewData["Title"] = "Sales Report";
+    Layout = "/Features/Shared/_Layout.cshtml";
+}
+
+<h2 class="mb-4">Sales Report</h2>
+
+<form id="reportForm" method="post">
+    <div class="row">
+        <div class="col-md-4">
+            <label>From Date</label>
+            <input type="date" name="fromDate" class="form-control" />
+        </div>
+        <div class="col-md-4">
+            <label>To Date</label>
+            <input type="date" name="toDate" class="form-control" />
+        </div>
+        <div class="col-md-4">
+            <label>&nbsp;</label>
+            <button type="submit" class="btn btn-primary form-control">Result</button>
+        </div>
+    </div>
+</form>
+<hr />
+<div id="reportResult"></div>
+
+@section Scripts {
+    <script>
+        $("#reportForm").submit(function (e) {
+            e.preventDefault();
+
+            $.ajax({
+                url: '/Report/GetReport',
+                type: 'POST',
+                data: $(this).serialize(),
+                success: function (result) {
+                    $("#reportResult").html(result);
+                }
+            });
+        });
+    </script>
+}
