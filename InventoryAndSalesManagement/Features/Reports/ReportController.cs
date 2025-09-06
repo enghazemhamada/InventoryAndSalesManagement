@@ -1,9 +1,11 @@
 ﻿using InventoryAndSalesManagement.Features.Sales;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace InventoryAndSalesManagement.Features.Reports
 {
+    [Authorize]
     public class ReportController : Controller
     {
         private readonly ISalesInvoiceRepository _salesInvoiceRepository;

@@ -8,7 +8,7 @@
 <h2>Sales Invoices</h2>
 <a asp-action="Add" class="btn btn-primary mt-2 mb-3">Add</a>
 
-<table class="table table-bordered">
+<table id="salesInvoicesTable" class="table table-bordered">
     <thead class="table-dark">
         <tr>
             <th>
@@ -49,9 +49,29 @@
                     $@Html.DisplayFor(modelItem => item.Total)
                 </td>
                 <td>
+                    <a asp-controller="SalesInvoice" asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">Edit</a>
                     <a asp-controller="SalesInvoice" asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger">Delete</a>
                 </td>
             </tr>
         }
     </tbody>
 </table>
+
+@section Scripts {
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('#salesInvoicesTable').DataTable({
+                language: {
+                    search: "Search:",
+                    paginate: {
+                        previous: "Previous",
+                        next: "Next"
+                    },
+                    lengthMenu: "Show _MENU_ sales invoices",
+                    info: "Showing _START_ to _END_ of _TOTAL_ sales invoices"
+                }
+            });
+        });
+    </script>
+}

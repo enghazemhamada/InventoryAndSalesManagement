@@ -8,7 +8,7 @@
 <h2>Customers</h2>
 <a asp-action="Add" class="btn btn-primary mt-2 mb-3">Add</a>
 
-<table class="table table-bordered">
+<table id="customersTable" class="table table-bordered">
     <thead class="table-dark">
         <tr>
             <th>
@@ -50,3 +50,22 @@
         }
     </tbody>
 </table>
+
+@section Scripts {
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('#customersTable').DataTable({
+                language: {
+                    search: "Search:",
+                    paginate: {
+                        previous: "Previous",
+                        next: "Next"
+                    },
+                    lengthMenu: "Show _MENU_ customers",
+                    info: "Showing _START_ to _END_ of _TOTAL_ customers"
+                }
+            });
+        });
+    </script>
+}

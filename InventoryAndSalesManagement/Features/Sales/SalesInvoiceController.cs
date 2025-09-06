@@ -1,9 +1,12 @@
 ﻿using InventoryAndSalesManagement.Features.Customers;
 using InventoryAndSalesManagement.Features.Products;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.CodeAnalysis;
 
 namespace InventoryAndSalesManagement.Features.Sales
 {
+    [Authorize]
     public class SalesInvoiceController : Controller
     {
         private readonly ICustomerRepository _customerRepository;
@@ -53,13 +56,20 @@ namespace InventoryAndSalesManagement.Features.Sales
                 foreach(var item in salesInvoiceVM.Items)
                 {
                     Product product = await _productRepository.GetByIdAsync(item.ProductId);
-                    if(item.Quantity > product.QuantityInStock)
+                    if(product != null)
                     {
-                        ModelState.AddModelError("", $"Not enough stock for product: {product.Name}");
+                        if(item.Quantity > product.QuantityInStock)
+                        {
+                            ModelState.AddModelError("", $"Not enough stock for product: {product.Name}");
 
-                        salesInvoiceVM.Customers = await _customerRepository.GetAllAsync();
-                        salesInvoiceVM.Products = await _productRepository.GetAllAsync();
-                        return View("/Features/Sales/Views/Add.cshtml", salesInvoiceVM);
+                            salesInvoiceVM.Customers = await _customerRepository.GetAllAsync();
+                            salesInvoiceVM.Products = await _productRepository.GetAllAsync();
+                            return View("/Features/Sales/Views/Add.cshtml", salesInvoiceVM);
+                        }
+                    }
+                    else
+                    {
+                        return NotFound();
                     }
                 }
 
@@ -67,17 +77,26 @@ namespace InventoryAndSalesManagement.Features.Sales
                 string dateStr = now.ToString("ddHHmmss");
                 int invoiceNo = int.Parse(dateStr + salesInvoiceVM.CustomerId);
 
+                decimal total = 0;
+                List<SalesInvoiceItem> items = new List<SalesInvoiceItem>();
+                foreach(var item in salesInvoiceVM.Items)
+                {
+                    Product product = await _productRepository.GetByIdAsync(item.ProductId);
+                    total += item.Quantity * product.Price;
+                    items.Add(new SalesInvoiceItem
+                    {
+                        ProductId = item.ProductId,
+                        Quantity = item.Quantity,
+                        Price = product.Price
+                    });
+                }
+
                 SalesInvoice salesInvoice = new SalesInvoice
                 {
                     InvoiceNo = invoiceNo,
                     CustomerId = salesInvoiceVM.CustomerId,
-                    Total = salesInvoiceVM.Items.Sum(x => x.Quantity * x.Price),
-                    Items = salesInvoiceVM.Items.Select(x => new SalesInvoiceItem
-                    {
-                        ProductId = x.ProductId,
-                        Quantity = x.Quantity,
-                        Price = x.Price
-                    }).ToList()
+                    Total = total,
+                    Items = items
                 };
 
                 try
@@ -105,6 +124,117 @@ namespace InventoryAndSalesManagement.Features.Sales
             salesInvoiceVM.Customers = await _customerRepository.GetAllAsync();
             salesInvoiceVM.Products = await _productRepository.GetAllAsync();
             return View("/Features/Sales/Views/Add.cshtml", salesInvoiceVM);
+        }
+
+        public async Task<IActionResult> Edit(int id)
+        {
+            SalesInvoice salesInvoice = await _salesInvoiceRepository.GetSalesInvoiceWithItemsAsync(id);
+            if(salesInvoice != null)
+            {
+                EditSalesInvoiceWithCustomersWithProductsViewModel salesInvoiceWithCustomersWithProductsVM =
+                    new EditSalesInvoiceWithCustomersWithProductsViewModel
+                    {
+                        Id = id,
+                        CustomerId = salesInvoice.CustomerId,
+                        Items = salesInvoice.Items.Select(i => new SalesInvoiceItemViewModel
+                        {
+                            ProductId = i.ProductId,
+                            Quantity = i.Quantity,
+                            Price = i.Price
+                        }).ToList(),
+                        Customers = await _customerRepository.GetAllAsync(),
+                        Products = await _productRepository.GetAllAsync()
+                    };
+
+                return View("/Features/Sales/Views/Edit.cshtml", salesInvoiceWithCustomersWithProductsVM);
+            }
+            return NotFound();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SaveEdit(int id, EditSalesInvoiceWithCustomersWithProductsViewModel salesInvoiceVM)
+        {
+            if(ModelState.IsValid)
+            {
+                SalesInvoice salesInvoice = await _salesInvoiceRepository.GetSalesInvoiceWithItemsAsync(id);
+                if(salesInvoice != null)
+                {
+                    foreach(var item in salesInvoiceVM.Items)
+                    {
+                        Product product = await _productRepository.GetByIdAsync(item.ProductId);
+                        if(product != null)
+                        {
+                            if(item.Quantity > product.QuantityInStock)
+                            {
+                                ModelState.AddModelError("", $"Not enough stock for product: {product.Name}");
+
+                                salesInvoiceVM.Customers = await _customerRepository.GetAllAsync();
+                                salesInvoiceVM.Products = await _productRepository.GetAllAsync();
+                                return View("/Features/Sales/Views/Edit.cshtml", salesInvoiceVM);
+                            }
+                        }
+                        else
+                        {
+                            return NotFound();
+                        }
+                    }
+
+                    decimal total = 0;
+                    List<SalesInvoiceItem> items = new List<SalesInvoiceItem>();
+                    foreach(var item in salesInvoiceVM.Items)
+                    {
+                        Product product = await _productRepository.GetByIdAsync(item.ProductId);
+                        total += item.Quantity * product.Price;
+                        items.Add(new SalesInvoiceItem
+                        {
+                            ProductId = item.ProductId,
+                            Quantity = item.Quantity,
+                            Price = product.Price
+                        });
+                    }
+
+                    for(int i = 0; i < salesInvoiceVM.Items.Count; i++)
+                    {
+                        Product product = await _productRepository.GetByIdAsync(salesInvoiceVM.Items[i].ProductId);
+                        if(salesInvoice.Items.Count <= i)
+                        {
+                            product.QuantityInStock -= salesInvoiceVM.Items[i].Quantity;
+                        }
+                        else if(salesInvoice.Items[i].Quantity > salesInvoiceVM.Items[i].Quantity)
+                        {
+                            int count = salesInvoice.Items[i].Quantity - salesInvoiceVM.Items[i].Quantity;
+                            product.QuantityInStock += count;
+                        }
+                        else if(salesInvoice.Items[i].Quantity < salesInvoiceVM.Items[i].Quantity)
+                        {
+                            int count = salesInvoiceVM.Items[i].Quantity - salesInvoice.Items[i].Quantity;
+                            product.QuantityInStock -= count;
+                        }
+                    }
+
+                    salesInvoice.CustomerId = salesInvoiceVM.CustomerId;
+                    salesInvoice.Total = total;
+                    salesInvoice.Items = items;
+
+                    try
+                    {
+                        await _salesInvoiceRepository.SaveAsync();
+                        return RedirectToAction("Index");
+                    }
+                    catch(Exception ex)
+                    {
+                        ModelState.AddModelError("", ex.Message);
+
+                        salesInvoiceVM.Customers = await _customerRepository.GetAllAsync();
+                        salesInvoiceVM.Products = await _productRepository.GetAllAsync();
+                        return View("/Features/Sales/Views/Edit.cshtml", salesInvoiceVM);
+                    }
+                }
+                return NotFound();
+            }
+            salesInvoiceVM.Customers = await _customerRepository.GetAllAsync();
+            salesInvoiceVM.Products = await _productRepository.GetAllAsync();
+            return View("/Features/Sales/Views/Edit.cshtml", salesInvoiceVM);
         }
 
         public async Task<IActionResult> Delete(int id)

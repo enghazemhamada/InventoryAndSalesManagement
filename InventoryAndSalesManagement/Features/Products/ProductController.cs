@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace InventoryAndSalesManagement.Features.Products
 {
+    [Authorize]
     public class ProductController : Controller
     {
         private readonly IProductRepository _productRepository;

@@ -1,11 +1,13 @@
-﻿using InventoryAndSalesManagement.Features.Customers;
+﻿using InventoryAndSalesManagement.Features.Accounts;
+using InventoryAndSalesManagement.Features.Customers;
 using InventoryAndSalesManagement.Features.Products;
 using InventoryAndSalesManagement.Features.Sales;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace InventoryAndSalesManagement.Infrastructure.Data
 {
-    public class ApplicationDbContext : DbContext
+    public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
         public ApplicationDbContext(DbContextOptions options) : base(options) { }
 

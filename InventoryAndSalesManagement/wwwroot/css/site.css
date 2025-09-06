@@ -20,3 +20,38 @@ html {
 body {
   margin-bottom: 60px;
 }
+
+table.dataTable {
+    border-collapse: collapse;
+}
+
+.dataTables_wrapper .dataTables_filter {
+    margin-bottom: 16px;
+}
+
+.dataTables_wrapper .dataTables_info,
+.dataTables_wrapper .dataTables_paginate {
+    margin-top: 10px;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.previous,
+.dataTables_wrapper .dataTables_paginate .paginate_button.next {
+    background-color: #0d6efd;
+    color: #fff !important;
+    font-size: 14px;
+    padding: 4px 8px;
+    width: 72px;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.previous:hover,
+.dataTables_wrapper .dataTables_paginate .paginate_button.next:hover {
+    background-color: #0b5ed7;
+    color: #fff !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.current {
+    background: #fff;
+    padding: 4px 8px;
+    min-width: 40px;
+    font-size: 14px;
+}

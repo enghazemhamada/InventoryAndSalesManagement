@@ -1,8 +1,10 @@
+using InventoryAndSalesManagement.Features.Accounts;
 using InventoryAndSalesManagement.Features.Customers;
 using InventoryAndSalesManagement.Features.Products;
 using InventoryAndSalesManagement.Features.Sales;
 using InventoryAndSalesManagement.Infrastructure.Data;
 using InventoryAndSalesManagement.Infrastructure.Repositories;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace InventoryAndSalesManagement
@@ -20,6 +22,8 @@ namespace InventoryAndSalesManagement
             {
                 options.UseSqlServer(builder.Configuration.GetConnectionString("default"));
             });
+
+            builder.Services.AddIdentity<ApplicationUser, IdentityRole>().AddEntityFrameworkStores<ApplicationDbContext>();
 
             builder.Services.AddTransient(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             builder.Services.AddTransient<IProductRepository, ProductRepository>();
