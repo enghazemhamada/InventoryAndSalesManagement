@@ -1,4 +1,7 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using InventoryAndSalesManagement.Features.Customers.Commands;
+using InventoryAndSalesManagement.Features.Customers.Queries;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace InventoryAndSalesManagement.Features.Customers
@@ -6,16 +9,16 @@ namespace InventoryAndSalesManagement.Features.Customers
     [Authorize]
     public class CustomerController : Controller
     {
-        private readonly ICustomerRepository _customerRepository;
+        private readonly IMediator _mediator;
 
-        public CustomerController(ICustomerRepository customerRepository)
+        public CustomerController(IMediator mediator)
         {
-            _customerRepository = customerRepository;
+            _mediator = mediator;
         }
 
         public async Task<IActionResult> Index()
         {
-            IEnumerable<Customer> customers = await _customerRepository.GetAllAsync();
+            List<Customer> customers = await _mediator.Send(new GetAllCustomersQuery());
 
             return View("/Features/Customers/Views/Index.cshtml", customers);
         }
@@ -30,15 +33,7 @@ namespace InventoryAndSalesManagement.Features.Customers
         {
             if(ModelState.IsValid)
             {
-                Customer customer = new Customer
-                {
-                    Name = customerVM.Name,
-                    Email = customerVM.Email,
-                    Phone = customerVM.Phone
-                };
-
-                await _customerRepository.AddAsync(customer);
-                await _customerRepository.SaveAsync();
+                Customer customer = await _mediator.Send(new AddCustomerCommand(customerVM));
                 return RedirectToAction("Index");
             }
             return View("/Features/Customers/Views/Add.cshtml", customerVM);
@@ -46,17 +41,9 @@ namespace InventoryAndSalesManagement.Features.Customers
 
         public async Task<IActionResult> Edit(int id)
         {
-            Customer customerFromDB = await _customerRepository.GetByIdAsync(id);
-            if(customerFromDB != null)
+            EditCustomerViewModel customerVM = await _mediator.Send(new GetCustomerEditDataQuery(id));
+            if(customerVM != null)
             {
-                EditCustomerViewModel customerVM = new EditCustomerViewModel
-                {
-                    Id = id,
-                    Name = customerFromDB.Name,
-                    Email = customerFromDB.Email,
-                    Phone = customerFromDB.Phone
-                };
-
                 return View("/Features/Customers/Views/Edit.cshtml", customerVM);
             }
             return NotFound();
@@ -67,16 +54,10 @@ namespace InventoryAndSalesManagement.Features.Customers
         {
             if(ModelState.IsValid)
             {
-                Customer customerFromDB = await _customerRepository.GetByIdAsync(id);
-                if(customerFromDB != null)
-                {
-                    customerFromDB.Name = customerVM.Name;
-                    customerFromDB.Email = customerVM.Email;
-                    customerFromDB.Phone = customerVM.Phone;
-
-                    await _customerRepository.SaveAsync();
+                bool result = await _mediator.Send(new EditCustomerCommand(id, customerVM));
+                if(result)
                     return RedirectToAction("Index");
-                }
+
                 return NotFound();
             }
             return View("/Features/Customers/Views/Edit.cshtml", customerVM);
@@ -84,7 +65,7 @@ namespace InventoryAndSalesManagement.Features.Customers
 
         public async Task<IActionResult> Delete(int id)
         {
-            Customer customerFromDB = await _customerRepository.GetByIdAsync(id);
+            Customer customerFromDB = await _mediator.Send(new GetCustomerByIdQuery(id));
             if(customerFromDB != null)
             {
                 return View("/Features/Customers/Views/Delete.cshtml", customerFromDB);
@@ -94,13 +75,10 @@ namespace InventoryAndSalesManagement.Features.Customers
 
         public async Task<IActionResult> ConfirmDelete(int id)
         {
-            Customer customerFromDB = await _customerRepository.GetByIdAsync(id);
-            if(customerFromDB != null)
-            {
-                _customerRepository.Delete(customerFromDB);
-                await _customerRepository.SaveAsync();
+            bool result = await _mediator.Send(new DeleteCustomerCommand(id));
+            if(result)
                 return RedirectToAction("Index");
-            }
+
             return NotFound();
         }
     }

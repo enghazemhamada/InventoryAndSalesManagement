@@ -98,7 +98,7 @@
             $(document).on("change", ".productSelect", function () {
                 var row = $(this).closest("tr");
                 var productId = $(this).val();
-                $.get("/SalesInvoice/GetProductPrice", { productId: productId }, function (res) {
+                $.get("/Product/GetProductPrice", { productId: productId }, function (res) {
                     row.find(".price").val(res.price);
                     row.find(".quantity").attr("max", res.stock);
                     updateRowTotal(row);

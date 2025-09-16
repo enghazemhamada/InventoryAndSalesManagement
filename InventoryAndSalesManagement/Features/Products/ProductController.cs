@@ -1,4 +1,7 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using InventoryAndSalesManagement.Features.Products.Commands;
+using InventoryAndSalesManagement.Features.Products.Queries;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace InventoryAndSalesManagement.Features.Products
@@ -6,27 +9,23 @@ namespace InventoryAndSalesManagement.Features.Products
     [Authorize]
     public class ProductController : Controller
     {
-        private readonly IProductRepository _productRepository;
+        private readonly IMediator _mediator;
 
-        public ProductController(IProductRepository productRepository)
+        public ProductController(IMediator mediator)
         {
-            _productRepository = productRepository;
+            _mediator = mediator;
         }
 
         public async Task<IActionResult> Index()
         {
-            IEnumerable<Product> products = await _productRepository.GetAllAsync();
+            List<Product> products = await _mediator.Send(new GetAllProductsQuery());
 
             return View("/Features/Products/Views/Index.cshtml", products);
         }
 
         public async Task<IActionResult> Search(string search)
         {
-            IEnumerable<Product> products = await _productRepository.GetAllAsync();
-            if(!string.IsNullOrWhiteSpace(search))
-            {
-                products = products.Where(p => p.Name.Contains(search));
-            }
+            List<Product> products = await _mediator.Send(new SearchProductsQuery(search));
 
             return PartialView("/Features/Products/Views/_ProductsTable.cshtml", products);
         }
@@ -41,15 +40,7 @@ namespace InventoryAndSalesManagement.Features.Products
         {
             if(ModelState.IsValid)
             {
-                Product product = new Product
-                {
-                    Name = productVM.Name,
-                    Price = productVM.Price,
-                    QuantityInStock = productVM.QuantityInStock
-                };
-
-                await _productRepository.AddAsync(product);
-                await _productRepository.SaveAsync();
+                Product product = await _mediator.Send(new AddProductCommand(productVM));
                 return RedirectToAction("Index");
             }
             return View("/Features/Products/Views/Add.cshtml", productVM);
@@ -57,17 +48,9 @@ namespace InventoryAndSalesManagement.Features.Products
 
         public async Task<IActionResult> Edit(int id)
         {
-            Product productFromDB = await _productRepository.GetByIdAsync(id);
-            if(productFromDB != null)
+            EditProductViewModel productVM = await _mediator.Send(new GetProductEditDataQuery(id));
+            if(productVM != null)
             {
-                EditProductViewModel productVM = new EditProductViewModel
-                {
-                    Id = id,
-                    Name = productFromDB.Name,
-                    Price = productFromDB.Price,
-                    QuantityInStock = productFromDB.QuantityInStock
-                };
-
                 return View("/Features/Products/Views/Edit.cshtml", productVM);
             }
             return NotFound();
@@ -78,16 +61,10 @@ namespace InventoryAndSalesManagement.Features.Products
         {
             if(ModelState.IsValid)
             {
-                Product productFromDB = await _productRepository.GetByIdAsync(id);
-                if(productFromDB != null)
-                {
-                    productFromDB.Name = productVM.Name;
-                    productFromDB.Price = productVM.Price;
-                    productFromDB.QuantityInStock = productVM.QuantityInStock;
-
-                    await _productRepository.SaveAsync();
+                bool result = await _mediator.Send(new EditProductCommand(id, productVM));
+                if(result)
                     return RedirectToAction("Index");
-                }
+
                 return NotFound();
             }
             return View("/Features/Products/Views/Edit.cshtml", productVM);
@@ -95,7 +72,7 @@ namespace InventoryAndSalesManagement.Features.Products
 
         public async Task<IActionResult> Delete(int id)
         {
-            Product productFromDB = await _productRepository.GetByIdAsync(id);
+            Product productFromDB = await _mediator.Send(new GetProductByIdQuery(id));
             if(productFromDB != null)
             {
                 return View("/Features/Products/Views/Delete.cshtml", productFromDB);
@@ -105,12 +82,19 @@ namespace InventoryAndSalesManagement.Features.Products
 
         public async Task<IActionResult> ConfirmDelete(int id)
         {
-            Product productFromDB = await _productRepository.GetByIdAsync(id);
-            if(productFromDB != null)
-            {
-                _productRepository.Delete(productFromDB);
-                await _productRepository.SaveAsync();
+            bool result = await _mediator.Send(new DeleteProductCommand(id));
+            if(result)
                 return RedirectToAction("Index");
+
+            return NotFound();
+        }
+
+        public async Task<IActionResult> GetProductPrice(int productId)
+        {
+            ProductPriceViewModel productPriceVM = await _mediator.Send(new GetProductPriceQuery(productId));
+            if(productPriceVM != null)
+            {
+                return Json(productPriceVM);
             }
             return NotFound();
         }
